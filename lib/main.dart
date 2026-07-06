@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'pages/main_navigation_page.dart';
+import 'pages/staff_navigation_page.dart';
 import 'screens/login_page.dart';
 import 'services/auth_repository.dart';
+import 'services/events_service.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -132,6 +134,7 @@ class AuthGate extends StatefulWidget {
 class _AuthGateState extends State<AuthGate> {
   bool loading = true;
   bool logged  = false;
+  bool isStaff = false;
 
   @override
   void initState() {
@@ -141,11 +144,35 @@ class _AuthGateState extends State<AuthGate> {
 
   Future<void> checkLogin() async {
     final isLogged = await AuthRepository.isLoggedIn();
-    if (!mounted) return;
-    setState(() {
-      logged  = isLogged;
-      loading = false;
-    });
+
+    if (!isLogged) {
+      if (!mounted) return;
+      setState(() { logged = false; loading = false; });
+      return;
+    }
+
+    // Rilegge sempre il ruolo aggiornato da /user/profile: se un admin
+    // promuove/rimuove lo staff, l'app rispecchia il cambio al prossimo
+    // avvio senza bisogno di un nuovo login.
+    try {
+      final profile = await EventsService.getProfile();
+      await AuthRepository.saveRoleFlags(
+        isStaff: profile["is_staff"] == true,
+        canManageEvents: profile["can_manage_events"] == true,
+        canValidateCheckin: profile["can_validate_checkin"] == true,
+      );
+      if (!mounted) return;
+      setState(() {
+        logged  = true;
+        isStaff = profile["is_staff"] == true;
+        loading = false;
+      });
+    } catch (_) {
+      // Token scaduto/non valido: torna al login invece di bloccarsi.
+      await AuthRepository.logout();
+      if (!mounted) return;
+      setState(() { logged = false; loading = false; });
+    }
   }
 
   @override
@@ -157,6 +184,7 @@ class _AuthGateState extends State<AuthGate> {
         ),
       );
     }
-    return logged ? const MainNavigationPage() : const LoginPage();
+    if (!logged) return const LoginPage();
+    return isStaff ? const StaffNavigationPage() : const MainNavigationPage();
   }
 }

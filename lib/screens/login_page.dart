@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../main.dart';
 import '../services/auth_repository.dart';
+import '../services/events_service.dart';
 import '../pages/main_navigation_page.dart';
+import '../pages/staff_navigation_page.dart';
 import '../widgets/cvlture_logo.dart';
 import 'register_page.dart';
 
@@ -42,11 +44,34 @@ class _LoginPageState extends State<LoginPage> {
         passwordController.text.trim(),
       );
 
+      // Legge il ruolo da /user/profile per decidere se questo account
+      // è staff o cliente: stesso login JWT per entrambi, cambia solo
+      // dove li mandiamo dopo (vedi cvlture_user_profile() in
+      // cvlture-api.php, che ora espone is_staff/can_manage_events/
+      // can_validate_checkin).
+      bool isStaff = false;
+      try {
+        final profile = await EventsService.getProfile();
+        isStaff = profile["is_staff"] == true;
+        await AuthRepository.saveRoleFlags(
+          isStaff: isStaff,
+          canManageEvents: profile["can_manage_events"] == true,
+          canValidateCheckin: profile["can_validate_checkin"] == true,
+        );
+      } catch (_) {
+        // Se il profilo non è leggibile per qualche motivo, non
+        // blocchiamo il login: trattiamo l'account come cliente normale.
+      }
+
       if (!mounted) return;
 
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const MainNavigationPage()),
+        MaterialPageRoute(
+          builder: (_) => isStaff
+              ? const StaffNavigationPage()
+              : const MainNavigationPage(),
+        ),
       );
     } catch (e) {
       setState(() {

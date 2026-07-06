@@ -100,7 +100,38 @@ class AuthRepository {
     await storage.delete(key: "jwt_token");
     await storage.delete(key: "user_email");
     await storage.delete(key: "user_display_name");
+    await storage.delete(key: "is_staff");
+    await storage.delete(key: "can_manage_events");
+    await storage.delete(key: "can_validate_checkin");
   }
+
+  /* ==========================================
+     RUOLO STAFF
+     Salvato localmente dopo aver letto /user/profile,
+     che ora restituisce anche is_staff / can_manage_events /
+     can_validate_checkin (vedi cvlture_user_profile() in
+     cvlture-api.php). Serve per decidere, dopo il login,
+     se mostrare la UI cliente o la UI staff.
+  ========================================== */
+
+  static Future<void> saveRoleFlags({
+    required bool isStaff,
+    required bool canManageEvents,
+    required bool canValidateCheckin,
+  }) async {
+    await storage.write(key: "is_staff", value: isStaff.toString());
+    await storage.write(key: "can_manage_events", value: canManageEvents.toString());
+    await storage.write(key: "can_validate_checkin", value: canValidateCheckin.toString());
+  }
+
+  static Future<bool> isStaff() async =>
+      (await storage.read(key: "is_staff")) == "true";
+
+  static Future<bool> canManageEvents() async =>
+      (await storage.read(key: "can_manage_events")) == "true";
+
+  static Future<bool> canValidateCheckin() async =>
+      (await storage.read(key: "can_validate_checkin")) == "true";
 
   /* ==========================================
      HELPERS
