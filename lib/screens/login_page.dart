@@ -1,3 +1,4 @@
+import '../widgets/cvlture_loader.dart';
 import 'package:flutter/material.dart';
 
 import '../main.dart';
@@ -160,10 +161,7 @@ class _LoginPageState extends State<LoginPage> {
                   child: loading
                       ? const SizedBox(
                           width: 22, height: 22,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            color: Colors.black,
-                          ),
+                          child: CvltureLoader(size: 22),
                         )
                       : const Text("Accedi",
                           style: TextStyle(fontSize: 17)),

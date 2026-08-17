@@ -1,3 +1,4 @@
+import '../widgets/cvlture_loader.dart';
 import 'package:flutter/material.dart';
 
 import '../main.dart';
@@ -229,7 +230,7 @@ class _ProfilePageState extends State<ProfilePage> {
     return Scaffold(
       body: SafeArea(
         child: loading
-            ? const Center(child: CircularProgressIndicator(color: CvltureColors.green))
+            ? const Center(child: CvltureLoader())
             : RefreshIndicator(
                 color: CvltureColors.green,
                 onRefresh: () async {
@@ -509,8 +510,7 @@ class _ProfilePageState extends State<ProfilePage> {
             child: saving
                 ? const SizedBox(
                     width: 20, height: 20,
-                    child: CircularProgressIndicator(
-                        strokeWidth: 2.5, color: Colors.black),
+                    child: CvltureLoader(size: 22),
                   )
                 : const Text("Salva modifiche"),
           ),
@@ -536,8 +536,7 @@ class _ProfilePageState extends State<ProfilePage> {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: 20),
         child: Center(
-          child: CircularProgressIndicator(
-              color: CvltureColors.green, strokeWidth: 2),
+          child: CvltureLoader(size: 22),
         ),
       );
     }

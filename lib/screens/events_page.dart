@@ -1,3 +1,4 @@
+import '../widgets/cvlture_loader.dart';
 import 'package:flutter/material.dart';
 
 import '../main.dart';
@@ -118,8 +119,7 @@ class _EventsPageState extends State<EventsPage> {
             Expanded(
               child: loading
                   ? const Center(
-                      child: CircularProgressIndicator(
-                          color: CvltureColors.green),
+                      child: CvltureLoader(),
                     )
                   : RefreshIndicator(
                       color: CvltureColors.green,

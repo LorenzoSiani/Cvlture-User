@@ -1,3 +1,4 @@
+import '../widgets/cvlture_loader.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -77,7 +78,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
   Widget build(BuildContext context) {
     if (loading) {
       return const Scaffold(
-        body: Center(child: CircularProgressIndicator(color: CvltureColors.green)),
+        body: Center(child: CvltureLoader()),
       );
     }
     if (event == null) {
@@ -519,8 +520,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
         child: actionLoading
             ? const SizedBox(
                 width: 22, height: 22,
-                child: CircularProgressIndicator(
-                    strokeWidth: 2.5, color: Colors.black))
+                child: CvltureLoader(size: 22))
             : const Text("Iscriviti all'evento",
                 style: TextStyle(fontSize: 17)),
       ),

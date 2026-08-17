@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'pages/main_navigation_page.dart';
+import 'widgets/cvlture_loader.dart';
 import 'pages/staff_navigation_page.dart';
 import 'screens/login_page.dart';
 import 'services/auth_repository.dart';
@@ -180,7 +181,7 @@ class _AuthGateState extends State<AuthGate> {
     if (loading) {
       return const Scaffold(
         body: Center(
-          child: CircularProgressIndicator(color: CvltureColors.green),
+          child: const CvltureLoader(size: 64),
         ),
       );
     }
