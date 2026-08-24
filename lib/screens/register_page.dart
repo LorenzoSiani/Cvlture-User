@@ -156,7 +156,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   const Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      CvltureLogo(height: 20),
+                      CvltureLogo(height: 28),
                       SizedBox(height: 3),
                       Text(
                         "Crea il tuo account",

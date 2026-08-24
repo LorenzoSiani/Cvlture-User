@@ -97,7 +97,7 @@ class _LoginPageState extends State<LoginPage> {
 
               /* ---- LOGO ---- */
               const SizedBox(height: 60),
-              const CvltureLogo(height: 52),
+              const CvltureLogo(height: 64),
               const SizedBox(height: 10),
               const Text(
                 "Accedi al tuo account",

@@ -61,10 +61,11 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> loadMyEvents() async {
     try {
-      final data = await EventsService.getMyRegistrations();
+      // Usa endpoint dedicato che filtra server-side (convalidato=1)
+      // così recupera anche eventi storici associati alla stessa email
+      final data = await EventsService.getParticipatedEvents();
       if (!mounted) return;
-      final checked = data.where((e) => e["checked_in"] == true).toList();
-      setState(() { myEvents = checked; loadingEvents = false; });
+      setState(() { myEvents = data; loadingEvents = false; });
     } catch (e) {
       if (!mounted) return;
       setState(() => loadingEvents = false);
@@ -246,7 +247,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     children: [
 
                       /* ---- HEADER ---- */
-                      const CvltureLogo(height: 20),
+                      const CvltureLogo(height: 28),
                       const SizedBox(height: 6),
                       const Text(
                         "Profilo",

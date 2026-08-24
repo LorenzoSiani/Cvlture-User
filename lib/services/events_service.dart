@@ -97,4 +97,15 @@ class EventsService {
       "ig_name":      igName,
     });
   }
+  /* ==========================================
+     EVENTI A CUI L'UTENTE HA PARTECIPATO
+     GET /cvlture/v1/user/participated-events
+     Solo quelli con check-in confermato (convalidato=1 nel DB).
+     Query server-side: più affidabile del filtro client-side.
+  ========================================== */
+
+  static Future<List<dynamic>> getParticipatedEvents() async {
+    final response = await ApiClient.get("/user/participated-events");
+    return response["data"] ?? [];
+  }
 }

@@ -59,7 +59,7 @@ class _StaffDashboardPageState extends State<StaffDashboardPage> {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
             children: [
-              const CvltureLogo(height: 20),
+              const CvltureLogo(height: 28),
               const SizedBox(height: 6),
               const Text(
                 "Dashboard Staff",
