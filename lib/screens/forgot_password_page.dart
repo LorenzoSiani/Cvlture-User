@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../main.dart';
 import '../services/auth_repository.dart';
+import '../widgets/cvlture_loader.dart';
 import '../widgets/cvlture_logo.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
@@ -193,11 +194,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   child: ElevatedButton(
                     onPressed: loading ? null : sendReset,
                     child: loading
-                        ? const SizedBox(
-                            width: 22, height: 22,
-                            child: CircularProgressIndicator(
-                                strokeWidth: 2.5, color: Colors.black),
-                          )
+                        ? const CvltureLoader(size: 22)
                         : const Text("Invia link di recupero",
                             style: TextStyle(fontSize: 16)),
                   ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../main.dart';
+import '../../widgets/cvlture_loader.dart';
 import '../../services/staff_service.dart';
 
 /// Scanner QR per la validazione ingressi.
@@ -142,7 +143,7 @@ class _QrScannerPageState extends State<QrScannerPage> {
 
             if (processing)
               const Center(
-                child: CircularProgressIndicator(color: CvltureColors.green),
+                child: CvltureLoader(),
               ),
 
             // Pannello esito in basso
