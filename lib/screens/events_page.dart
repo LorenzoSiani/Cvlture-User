@@ -69,7 +69,7 @@ class _EventsPageState extends State<EventsPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const CvltureLogo(height: 15),
+                  const CvltureLogo(height: 20),
                   const SizedBox(height: 6),
                   const Text(
                     "Eventi in corso",

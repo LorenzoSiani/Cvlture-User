@@ -47,7 +47,7 @@ class _MyTicketsPageState extends State<MyTicketsPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  CvltureLogo(height: 15),
+                  CvltureLogo(height: 20),
                   SizedBox(height: 6),
                   Text(
                     "I miei biglietti",

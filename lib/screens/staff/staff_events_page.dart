@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../main.dart';
 import '../../services/staff_service.dart';
+import '../../widgets/cvlture_loader.dart';
 import '../../widgets/cvlture_logo.dart';
 import 'staff_event_detail_page.dart';
 
@@ -16,6 +17,11 @@ class _StaffEventsPageState extends State<StaffEventsPage> {
   bool loading = true;
   List events = [];
   String? errorMessage;
+
+  static const _mesi = [
+    'Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno',
+    'Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'
+  ];
 
   @override
   void initState() {
@@ -38,21 +44,40 @@ class _StaffEventsPageState extends State<StaffEventsPage> {
     }
   }
 
-  Color _statusColor(String status) {
-    switch (status) {
+  /* ─── Raggruppa per mese ─────────────────────────────── */
+
+  Map<String, List> _groupByMonth(List evts) {
+    final Map<String, List> grouped = {};
+    for (final e in evts) {
+      final dateStr = (e["date"] ?? "").toString();
+      String label = "Senza data";
+      if (dateStr.length >= 7) {
+        try {
+          final d = DateTime.parse(dateStr);
+          label = "${_mesi[d.month - 1]} ${d.year}";
+        } catch (_) {}
+      }
+      grouped.putIfAbsent(label, () => []).add(e);
+    }
+    return grouped;
+  }
+
+  /* ─── Colore / label status ──────────────────────────── */
+
+  Color _statusColor(String s) {
+    switch (s) {
       case "active": return CvltureColors.green;
       case "draft":  return const Color(0xFFFFB300);
-      case "past":   return CvltureColors.grey;
       default:       return CvltureColors.grey;
     }
   }
 
-  String _statusLabel(String status) {
-    switch (status) {
+  String _statusLabel(String s) {
+    switch (s) {
       case "active": return "ATTIVO";
       case "draft":  return "BOZZA";
       case "past":   return "PASSATO";
-      default:       return status.toUpperCase();
+      default:       return s.toUpperCase();
     }
   }
 
@@ -63,14 +88,15 @@ class _StaffEventsPageState extends State<StaffEventsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
+            /* ── HEADER ── */
+            const Padding(
+              padding: EdgeInsets.fromLTRB(20, 24, 20, 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const CvltureLogo(height: 15),
-                  const SizedBox(height: 6),
-                  const Text(
+                  CvltureLogo(height: 20),
+                  SizedBox(height: 6),
+                  Text(
                     "Eventi",
                     style: TextStyle(
                       fontSize: 28,
@@ -81,132 +107,229 @@ class _StaffEventsPageState extends State<StaffEventsPage> {
                 ],
               ),
             ),
+
+            /* ── LISTA ── */
             Expanded(
               child: loading
-                  ? const Center(
-                      child: CircularProgressIndicator(color: CvltureColors.green),
-                    )
+                  ? const Center(child: CvltureLoader())
                   : errorMessage != null
                       ? Center(
-                          child: Text(
-                            errorMessage!,
-                            style: const TextStyle(color: CvltureColors.grey),
-                          ),
+                          child: Text(errorMessage!,
+                              style: const TextStyle(color: CvltureColors.grey)),
                         )
                       : RefreshIndicator(
                           color: CvltureColors.green,
                           backgroundColor: CvltureColors.surface,
                           onRefresh: loadEvents,
-                          child: ListView.builder(
-                            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                            itemCount: events.length,
-                            itemBuilder: (context, index) {
-                              final event = events[index];
-                              final status = (event["status"] ?? "").toString();
-                              final registrations = event["registrations"] ?? 0;
-                              final checkins = event["checkins"] ?? 0;
-                              final capacity = event["max_capacity"] ?? 0;
-
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 14),
-                                child: InkWell(
-                                  borderRadius: BorderRadius.circular(18),
-                                  onTap: () => Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => StaffEventDetailPage(
-                                        eventId: event["id"],
-                                      ),
-                                    ),
-                                  ),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(16),
-                                    decoration: BoxDecoration(
-                                      color: CvltureColors.surface,
-                                      borderRadius: BorderRadius.circular(18),
-                                      border: Border.all(color: CvltureColors.border),
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          children: [
-                                            Expanded(
-                                              child: Text(
-                                                event["title"] ?? "",
-                                                style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontSize: 17,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                            ),
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(
-                                                horizontal: 8, vertical: 4,
-                                              ),
-                                              decoration: BoxDecoration(
-                                                color: _statusColor(status).withOpacity(0.15),
-                                                borderRadius: BorderRadius.circular(6),
-                                              ),
-                                              child: Text(
-                                                _statusLabel(status),
-                                                style: TextStyle(
-                                                  color: _statusColor(status),
-                                                  fontSize: 11,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Row(
-                                          children: [
-                                            const Icon(Icons.calendar_today_outlined,
-                                                color: CvltureColors.grey, size: 14),
-                                            const SizedBox(width: 6),
-                                            Text(
-                                              "${event["date"] ?? "-"}  ${event["time"] ?? ""}",
-                                              style: const TextStyle(
-                                                  color: CvltureColors.grey, fontSize: 13),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 10),
-                                        Row(
-                                          children: [
-                                            Icon(Icons.people_outline,
-                                                color: CvltureColors.grey, size: 14),
-                                            const SizedBox(width: 6),
-                                            Text(
-                                              capacity > 0
-                                                  ? "$registrations / $capacity iscritti"
-                                                  : "$registrations iscritti",
-                                              style: const TextStyle(
-                                                  color: CvltureColors.grey, fontSize: 13),
-                                            ),
-                                            const SizedBox(width: 16),
-                                            const Icon(Icons.qr_code_scanner_outlined,
-                                                color: CvltureColors.green, size: 14),
-                                            const SizedBox(width: 6),
-                                            Text(
-                                              "$checkins check-in",
-                                              style: const TextStyle(
-                                                  color: CvltureColors.green, fontSize: 13),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
+                          child: _buildGroupedGrid(),
                         ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGroupedGrid() {
+    final grouped = _groupByMonth(events);
+    if (grouped.isEmpty) {
+      return const Center(
+        child: Text("Nessun evento", style: TextStyle(color: CvltureColors.grey)),
+      );
+    }
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+      children: grouped.entries.map((entry) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            /* INTESTAZIONE MESE */
+            Padding(
+              padding: const EdgeInsets.only(top: 20, bottom: 12),
+              child: Row(
+                children: [
+                  Text(
+                    entry.key.toUpperCase(),
+                    style: const TextStyle(
+                      color: CvltureColors.green,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                      letterSpacing: 2,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Container(height: 1, color: CvltureColors.border),
+                  ),
+                ],
+              ),
+            ),
+
+            /* GRIGLIA 2 PER RIGA */
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount:    2,
+                crossAxisSpacing:  12,
+                mainAxisSpacing:   12,
+                childAspectRatio:  0.82,
+              ),
+              itemCount: entry.value.length,
+              itemBuilder: (context, i) =>
+                  _EventCard(event: entry.value[i],
+                    statusColor: _statusColor,
+                    statusLabel: _statusLabel),
+            ),
+          ],
+        );
+      }).toList(),
+    );
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   CARD EVENTO
+══════════════════════════════════════════════════════════ */
+
+class _EventCard extends StatelessWidget {
+  final Map event;
+  final Color Function(String) statusColor;
+  final String Function(String) statusLabel;
+
+  const _EventCard({
+    required this.event,
+    required this.statusColor,
+    required this.statusLabel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final status        = (event["status"] ?? "").toString();
+    final registrations = event["registrations"] ?? 0;
+    final capacity      = event["max_capacity"]  ?? 0;
+    final checkins      = event["checkins"]      ?? 0;
+
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => StaffEventDetailPage(eventId: event["id"]),
+        ),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: CvltureColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: CvltureColors.border),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+
+            /* IMMAGINE */
+            if (event["image"] != null)
+              Image.network(
+                event["image"],
+                height: 90,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _placeholder(),
+              )
+            else
+              _placeholder(),
+
+            /* BADGE STATUS */
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 0),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: statusColor(status).withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                    child: Text(
+                      statusLabel(status),
+                      style: TextStyle(
+                        color: statusColor(status),
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            /* TITOLO */
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 5, 10, 0),
+              child: Text(
+                event["title"] ?? "",
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  height: 1.3,
+                ),
+              ),
+            ),
+
+            const Spacer(),
+
+            /* STATS */
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+              child: Row(
+                children: [
+                  const Icon(Icons.people_outline,
+                      size: 12, color: CvltureColors.grey),
+                  const SizedBox(width: 4),
+                  Text(
+                    capacity > 0
+                        ? "$registrations/$capacity"
+                        : "$registrations",
+                    style: const TextStyle(
+                        color: CvltureColors.grey, fontSize: 11),
+                  ),
+                  const SizedBox(width: 8),
+                  const Icon(Icons.qr_code_scanner_outlined,
+                      size: 12, color: CvltureColors.green),
+                  const SizedBox(width: 4),
+                  Text(
+                    "$checkins",
+                    style: const TextStyle(
+                        color: CvltureColors.green, fontSize: 11),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _placeholder() {
+    return Container(
+      height: 90,
+      width: double.infinity,
+      color: const Color(0xFF111111),
+      child: const Center(
+        child: Text(
+          "CVLTURE",
+          style: TextStyle(
+            color: CvltureColors.green,
+            fontWeight: FontWeight.w900,
+            fontSize: 12,
+            letterSpacing: 3,
+          ),
         ),
       ),
     );

@@ -49,7 +49,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("Iscrizione completata! 🎉"),
+          content: Text("Iscrizione completata!"),
           backgroundColor: CvltureColors.green,
         ),
       );

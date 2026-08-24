@@ -37,98 +37,16 @@ class _StaffDashboardPageState extends State<StaffDashboardPage> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: RefreshIndicator(
-          color: CvltureColors.green,
-          backgroundColor: CvltureColors.surface,
-          onRefresh: loadDashboard,
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
-            children: [
-              const CvltureLogo(height: 15),
-              const SizedBox(height: 6),
-              const Text(
-                "Dashboard Staff",
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 28),
 
-              if (loading)
-                const Padding(
-                  padding: EdgeInsets.only(top: 60),
-                  child: Center(
-                    child: CircularProgressIndicator(color: CvltureColors.green),
-                  ),
-                )
-              else if (errorMessage != null)
-                _ErrorBox(message: errorMessage!, onRetry: loadDashboard)
-              else ...[
-                Row(
-                  children: [
-                    Expanded(child: _StatCard(
-                      label: "Eventi oggi",
-                      value: "${stats['today_events'] ?? 0}",
-                      icon: Icons.today_outlined,
-                    )),
-                    const SizedBox(width: 14),
-                    Expanded(child: _StatCard(
-                      label: "Eventi attivi",
-                      value: "${stats['active_events'] ?? 0}",
-                      icon: Icons.event_outlined,
-                    )),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                Row(
-                  children: [
-                    Expanded(child: _StatCard(
-                      label: "Iscrizioni totali",
-                      value: "${stats['total_registrations'] ?? 0}",
-                      icon: Icons.people_outline,
-                    )),
-                    const SizedBox(width: 14),
-                    Expanded(child: _StatCard(
-                      label: "Check-in fatti",
-                      value: "${stats['total_checkins'] ?? 0}",
-                      icon: Icons.qr_code_scanner_outlined,
-                    )),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                _StatCard(
-                  label: "Tasso di ingresso",
-                  value: "${stats['entry_rate'] ?? 0}%",
-                  icon: Icons.percent_outlined,
-                  fullWidth: true,
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
+  static const _mesi = [
+    'Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno',
+    'Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'
+  ];
+
+  static String _currentMonthLabel() {
+    final now = DateTime.now();
+    return 'Eventi ${_mesi[now.month - 1]}';
   }
-}
-
-class _StatCard extends StatelessWidget {
-  final String label;
-  final String value;
-  final IconData icon;
-  final bool fullWidth;
-
-  const _StatCard({
-    required this.label,
-    required this.value,
-    required this.icon,
-    this.fullWidth = false,
-  });
 
   @override
   Widget build(BuildContext context) {
@@ -170,7 +88,6 @@ class _ErrorBox extends StatelessWidget {
 
   const _ErrorBox({required this.message, required this.onRetry});
 
-  @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,

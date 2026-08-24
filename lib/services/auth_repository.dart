@@ -141,4 +141,27 @@ class AuthRepository {
   static Future<String?> getToken()           async => await storage.read(key: "jwt_token");
   static Future<String>  getUserDisplayName() async => await storage.read(key: "user_display_name") ?? "";
   static Future<String>  getUserEmail()       async => await storage.read(key: "user_email") ?? "";
+
+  /* ==========================================
+     RESET PASSWORD
+     POST /cvlture/v1/user/forgot-password
+  ========================================== */
+
+  static Future<void> sendPasswordReset({required String email}) async {
+    try {
+      final response = await http.post(
+        Uri.parse("$baseUrl/cvlture/v1/user/forgot-password"),
+        headers: {"Content-Type": "application/x-www-form-urlencoded"},
+        body: {"email": email},
+      );
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200) return;
+      throw Exception(data["message"] ?? "Errore durante il recupero password");
+    } catch (e) {
+      if (e.toString().contains("SocketException")) {
+        throw Exception("Controlla la connessione internet");
+      }
+      rethrow;
+    }
+  }
 }

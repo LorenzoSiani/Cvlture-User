@@ -63,7 +63,8 @@ class _ProfilePageState extends State<ProfilePage> {
     try {
       final data = await EventsService.getMyRegistrations();
       if (!mounted) return;
-      setState(() { myEvents = data; loadingEvents = false; });
+      final checked = data.where((e) => e["checked_in"] == true).toList();
+      setState(() { myEvents = checked; loadingEvents = false; });
     } catch (e) {
       if (!mounted) return;
       setState(() => loadingEvents = false);
@@ -245,7 +246,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     children: [
 
                       /* ---- HEADER ---- */
-                      const CvltureLogo(height: 15),
+                      const CvltureLogo(height: 20),
                       const SizedBox(height: 6),
                       const Text(
                         "Profilo",

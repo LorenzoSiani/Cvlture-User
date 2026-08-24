@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../main.dart';
 import '../../services/staff_service.dart';
+import '../../widgets/cvlture_loader.dart';
 import 'qr_scanner_page.dart';
 
 class StaffEventDetailPage extends StatefulWidget {
@@ -19,16 +20,17 @@ class _StaffEventDetailPageState extends State<StaffEventDetailPage> {
   String? errorMessage;
   String searchQuery = "";
   final searchController = TextEditingController();
-
-  // id delle registrazioni per cui è in corso una validazione manuale,
-  // per disabilitare il bottone ed evitare doppi tap.
   final Set validatingIds = {};
+
+  // Paginazione
+  int currentPage = 0;
+  static const int pageSize = 30;
 
   @override
   void initState() {
     super.initState();
     searchController.addListener(() {
-      setState(() => searchQuery = searchController.text.toLowerCase());
+      setState(() { searchQuery = searchController.text.toLowerCase(); currentPage = 0; });
     });
     loadDetail();
   }
@@ -45,9 +47,10 @@ class _StaffEventDetailPageState extends State<StaffEventDetailPage> {
       final data = await StaffService.getEventDetail(widget.eventId);
       if (!mounted) return;
       setState(() {
-        event = Map<String, dynamic>.from(data["event"] ?? {});
+        event         = Map<String, dynamic>.from(data["event"] ?? {});
         registrations = data["registrations"] ?? [];
-        loading = false;
+        loading       = false;
+        currentPage   = 0;
       });
     } catch (e) {
       if (!mounted) return;
@@ -58,29 +61,80 @@ class _StaffEventDetailPageState extends State<StaffEventDetailPage> {
     }
   }
 
-  List get filteredRegistrations {
-    if (searchQuery.isEmpty) return registrations;
-    return registrations.where((r) {
-      final name  = (r["name"]  ?? "").toString().toLowerCase();
-      final email = (r["email"] ?? "").toString().toLowerCase();
-      return name.contains(searchQuery) || email.contains(searchQuery);
-    }).toList();
+  /* ─── Lista filtrata + ordinata + paginata ─────────────── */
+
+  List get _filtered {
+    List list = registrations;
+    if (searchQuery.isNotEmpty) {
+      list = list.where((r) {
+        final name  = (r["name"]  ?? "").toString().toLowerCase();
+        final email = (r["email"] ?? "").toString().toLowerCase();
+        return name.contains(searchQuery) || email.contains(searchQuery);
+      }).toList();
+    }
+    // Ordine alfabetico per nome
+    list = List.from(list)
+      ..sort((a, b) => (a["name"] ?? "").toString()
+          .compareTo((b["name"] ?? "").toString()));
+    return list;
   }
 
+  List get _paged {
+    final all   = _filtered;
+    final start = currentPage * pageSize;
+    final end   = (start + pageSize).clamp(0, all.length);
+    return all.sublist(start, end);
+  }
+
+  int get _totalPages => (_filtered.length / pageSize).ceil().clamp(1, 999);
+
+  /* ─── Validazione con dialog di conferma ──────────────── */
+
   Future<void> validateManually(Map registration) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: CvltureColors.surface,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20)),
+        title: const Text("Conferma ingresso",
+            style: TextStyle(color: Colors.white)),
+        content: Text(
+          "Vuoi validare l'ingresso di ${registration["name"]}?",
+          style: const TextStyle(color: CvltureColors.grey),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Annulla",
+                style: TextStyle(color: CvltureColors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Conferma"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
     final id = registration["id"];
     setState(() => validatingIds.add(id));
 
     try {
       await StaffService.validateCheckin(
-        token: registration["qr_token"] ?? "",
+        token:   registration["qr_token"] ?? "",
         eventId: widget.eventId,
       );
       if (!mounted) return;
-      await loadDetail(); // ricarica per aggiornare stato + contatori
+      await loadDetail();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Ingresso validato: ${registration["name"]}")),
+        SnackBar(
+          content: Text("Ingresso validato: ${registration["name"]}"),
+          backgroundColor: CvltureColors.green,
+        ),
       );
     } catch (e) {
       if (!mounted) return;
@@ -97,68 +151,102 @@ class _StaffEventDetailPageState extends State<StaffEventDetailPage> {
       context,
       MaterialPageRoute(
         builder: (_) => QrScannerPage(
-          eventId: widget.eventId,
+          eventId:    widget.eventId,
           eventTitle: event["title"] ?? "",
         ),
       ),
     );
-    // Se lo scanner ha validato almeno un ingresso, ricarichiamo la lista
     if (result == true) loadDetail();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(event["title"] ?? "Dettaglio evento"),
-      ),
+      appBar: AppBar(title: Text(event["title"] ?? "Dettaglio evento")),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: openScanner,
         backgroundColor: CvltureColors.green,
         foregroundColor: Colors.black,
         icon: const Icon(Icons.qr_code_scanner),
-        label: const Text("Scanner", style: TextStyle(fontWeight: FontWeight.bold)),
+        label: const Text("Scanner",
+            style: TextStyle(fontWeight: FontWeight.bold)),
       ),
       body: SafeArea(
         child: loading
-            ? const Center(child: CircularProgressIndicator(color: CvltureColors.green))
+            ? const Center(child: CvltureLoader())
             : errorMessage != null
                 ? Center(
-                    child: Text(errorMessage!, style: const TextStyle(color: CvltureColors.grey)),
-                  )
+                    child: Text(errorMessage!,
+                        style: const TextStyle(color: CvltureColors.grey)))
                 : RefreshIndicator(
                     color: CvltureColors.green,
                     backgroundColor: CvltureColors.surface,
                     onRefresh: loadDetail,
                     child: ListView(
-                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+                      padding:
+                          const EdgeInsets.fromLTRB(20, 16, 20, 100),
                       children: [
-                        _EventSummary(event: event, total: registrations.length),
+                        /* SUMMARY */
+                        _EventSummary(
+                          event: event,
+                          total: registrations.length,
+                        ),
                         const SizedBox(height: 20),
+
+                        /* SEARCH */
                         TextField(
                           controller: searchController,
                           style: const TextStyle(color: Colors.white),
                           decoration: const InputDecoration(
-                            hintText: "Cerca per nome o email",
+                            hintText: "Cerca nome o email",
                             prefixIcon: Icon(Icons.search),
                           ),
                         ),
-                        const SizedBox(height: 16),
-                        ...filteredRegistrations.map((r) => _RegistrationTile(
+                        const SizedBox(height: 6),
+
+                        /* CONTATORE */
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Text(
+                            "${_filtered.length} RSVP"
+                            "${_totalPages > 1 ? " — pagina ${currentPage + 1} di $_totalPages" : ""}",
+                            style: const TextStyle(
+                                color: CvltureColors.grey, fontSize: 12),
+                          ),
+                        ),
+
+                        /* LISTA */
+                        ..._paged.map((r) => _RegistrationTile(
                               registration: r,
-                              isValidating: validatingIds.contains(r["id"]),
+                              isValidating:
+                                  validatingIds.contains(r["id"]),
                               onValidate: () => validateManually(r),
                             )),
-                        if (filteredRegistrations.isEmpty)
+
+                        if (_filtered.isEmpty)
                           const Padding(
                             padding: EdgeInsets.only(top: 40),
                             child: Center(
-                              child: Text(
-                                "Nessuna prenotazione trovata",
-                                style: TextStyle(color: CvltureColors.grey),
-                              ),
+                              child: Text("Nessun risultato",
+                                  style: TextStyle(
+                                      color: CvltureColors.grey)),
                             ),
                           ),
+
+                        /* PAGINAZIONE */
+                        if (_totalPages > 1) ...[
+                          const SizedBox(height: 16),
+                          _PaginationBar(
+                            currentPage: currentPage,
+                            totalPages:  _totalPages,
+                            onPrev: currentPage > 0
+                                ? () => setState(() => currentPage--)
+                                : null,
+                            onNext: currentPage < _totalPages - 1
+                                ? () => setState(() => currentPage++)
+                                : null,
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -166,6 +254,10 @@ class _StaffEventDetailPageState extends State<StaffEventDetailPage> {
     );
   }
 }
+
+/* ══════════════════════════════════════════════════════════
+   EVENT SUMMARY
+══════════════════════════════════════════════════════════ */
 
 class _EventSummary extends StatelessWidget {
   final Map event;
@@ -187,14 +279,14 @@ class _EventSummary extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: _SummaryStat(
-              label: "Iscritti",
+            child: _Stat(
+              label: "RSVP",
               value: capacity > 0 ? "$total / $capacity" : "$total",
             ),
           ),
           Container(width: 1, height: 32, color: CvltureColors.border),
           Expanded(
-            child: _SummaryStat(label: "Check-in", value: "$checkins"),
+            child: _Stat(label: "Check-in", value: "$checkins"),
           ),
         ],
       ),
@@ -202,26 +294,31 @@ class _EventSummary extends StatelessWidget {
   }
 }
 
-class _SummaryStat extends StatelessWidget {
-  final String label;
-  final String value;
-  const _SummaryStat({required this.label, required this.value});
+class _Stat extends StatelessWidget {
+  final String label, value;
+  const _Stat({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(
-          value,
-          style: const TextStyle(
-              color: CvltureColors.green, fontSize: 20, fontWeight: FontWeight.bold),
-        ),
+        Text(value,
+            style: const TextStyle(
+                color: CvltureColors.green,
+                fontSize: 20,
+                fontWeight: FontWeight.bold)),
         const SizedBox(height: 2),
-        Text(label, style: const TextStyle(color: CvltureColors.grey, fontSize: 12)),
+        Text(label,
+            style: const TextStyle(
+                color: CvltureColors.grey, fontSize: 12)),
       ],
     );
   }
 }
+
+/* ══════════════════════════════════════════════════════════
+   REGISTRATION TILE
+══════════════════════════════════════════════════════════ */
 
 class _RegistrationTile extends StatelessWidget {
   final Map registration;
@@ -254,23 +351,36 @@ class _RegistrationTile extends StatelessWidget {
               children: [
                 Text(
                   registration["name"] ?? "",
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   registration["email"] ?? "",
-                  style: const TextStyle(color: CvltureColors.grey, fontSize: 12),
+                  style: const TextStyle(
+                      color: CvltureColors.grey, fontSize: 12),
                 ),
               ],
             ),
           ),
           const SizedBox(width: 10),
           if (checkedIn)
-            const Chip(
-              label: Text("Entrato", style: TextStyle(color: Colors.black, fontSize: 12)),
-              backgroundColor: CvltureColors.green,
-              padding: EdgeInsets.zero,
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            /* Badge "Entrato" — grigio scuro, non sembra cliccabile */
+            Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2A2A2A),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Text(
+                "Entrato",
+                style: TextStyle(
+                  color: Color(0xFFAAAAAA),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             )
           else
             SizedBox(
@@ -282,12 +392,61 @@ class _RegistrationTile extends StatelessWidget {
                 ),
                 child: isValidating
                     ? const SizedBox(
-                        width: 14, height: 14,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                        width: 14,
+                        height: 14,
+                        child: CvltureLoader(size: 14),
                       )
-                    : const Text("Valida", style: TextStyle(fontSize: 13)),
+                    : const Text("Valida",
+                        style: TextStyle(fontSize: 13)),
               ),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   PAGINAZIONE
+══════════════════════════════════════════════════════════ */
+
+class _PaginationBar extends StatelessWidget {
+  final int currentPage, totalPages;
+  final VoidCallback? onPrev, onNext;
+
+  const _PaginationBar({
+    required this.currentPage,
+    required this.totalPages,
+    this.onPrev,
+    this.onNext,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: CvltureColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: CvltureColors.border),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          IconButton(
+            onPressed: onPrev,
+            icon: const Icon(Icons.chevron_left),
+            color: onPrev != null ? Colors.white : CvltureColors.border,
+          ),
+          Text(
+            "${currentPage + 1} / $totalPages",
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+          ),
+          IconButton(
+            onPressed: onNext,
+            icon: const Icon(Icons.chevron_right),
+            color: onNext != null ? Colors.white : CvltureColors.border,
+          ),
         ],
       ),
     );

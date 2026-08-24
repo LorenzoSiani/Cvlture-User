@@ -1,15 +1,9 @@
 import 'package:flutter/material.dart';
 
-/// Spinner di caricamento con il logo CVLTURE che ruota su se stesso.
-/// Drop-in replacement di CircularProgressIndicator.
-///
-/// Uso rapido:
-///   const CvltureLoader()           // 48px, versione standard
-///   const CvltureLoader(size: 28)   // inline nei bottoni
-///   const CvltureLoader(size: 72)   // fullscreen
+/// Spinner CVLTURE — logo che ruota su se stesso in senso orario
+/// (da sinistra verso destra). Drop-in replacement di CircularProgressIndicator.
 class CvltureLoader extends StatefulWidget {
   final double size;
-
   const CvltureLoader({super.key, this.size = 48});
 
   @override
@@ -19,6 +13,7 @@ class CvltureLoader extends StatefulWidget {
 class _CvltureLoaderState extends State<CvltureLoader>
     with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
+  late final Animation<double> _turns;
 
   @override
   void initState() {
@@ -27,6 +22,8 @@ class _CvltureLoaderState extends State<CvltureLoader>
       vsync: this,
       duration: const Duration(milliseconds: 1100),
     )..repeat();
+    // Tween esplicito 0→1 = senso orario (da sinistra verso destra in alto)
+    _turns = Tween<double>(begin: 0.0, end: 1.0).animate(_ctrl);
   }
 
   @override
@@ -38,13 +35,12 @@ class _CvltureLoaderState extends State<CvltureLoader>
   @override
   Widget build(BuildContext context) {
     return RotationTransition(
-      turns: _ctrl,
+      turns: _turns,
       child: Image.asset(
         'assets/images/logo.png',
         width: widget.size,
         height: widget.size,
         filterQuality: FilterQuality.high,
-        // Fallback testo se il file non è presente
         errorBuilder: (_, __, ___) => SizedBox(
           width: widget.size,
           height: widget.size,

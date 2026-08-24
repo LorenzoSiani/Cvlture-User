@@ -7,6 +7,7 @@ import '../services/events_service.dart';
 import '../pages/main_navigation_page.dart';
 import '../pages/staff_navigation_page.dart';
 import '../widgets/cvlture_logo.dart';
+import 'forgot_password_page.dart';
 import 'register_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -96,7 +97,7 @@ class _LoginPageState extends State<LoginPage> {
 
               /* ---- LOGO ---- */
               const SizedBox(height: 60),
-              const CvltureLogo(height: 42),
+              const CvltureLogo(height: 52),
               const SizedBox(height: 10),
               const Text(
                 "Accedi al tuo account",
@@ -150,7 +151,30 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ),
 
-              const SizedBox(height: 32),
+              const SizedBox(height: 12),
+
+              /* ---- PASSWORD DIMENTICATA ---- */
+              Align(
+                alignment: Alignment.centerRight,
+                child: GestureDetector(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ForgotPasswordPage(),
+                    ),
+                  ),
+                  child: const Text(
+                    "Ho dimenticato la password",
+                    style: TextStyle(
+                      color: CvltureColors.green,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 24),
 
               /* ---- BOTTONE ---- */
               SizedBox(
